@@ -1,0 +1,16 @@
+app:
+  name: go-rest-template
+
+server:
+  port: 8080
+  shutdownTimeout: 10s
+  readTimeout: 15s
+  writeTimeout: 15s
+  idleTimeout: 60s
+  allowedOrigins:
+    - http://localhost:3000
+    - http://127.0.0.1:3000
+
+log:
+  level: info
+

@@ -1,0 +1,38 @@
+openapi: 3.0.3
+info:
+  title: Go REST Template API
+  version: 1.0.0
+  description: Basic health and welcome endpoints for the Go REST template.
+servers:
+  - url: http://localhost:8080
+paths:
+  /:
+    get:
+      summary: Welcome message
+      responses:
+        '200':
+          description: A welcome message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+

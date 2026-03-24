@@ -1,0 +1,26 @@
+# Binaries
+/bin
+/dist
+/build
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go artifacts
+*.test
+*.out
+coverage.txt
+
+# IDE/editor
+.vscode/
+.idea/
+.DS_Store
+
+# Modules
+vendor/
+
+# Env files
+.env
+.env.*
+
