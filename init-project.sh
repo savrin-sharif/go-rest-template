@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEMPLATE_MODULE="github.com/example/go-rest-template"
+TEMPLATE_MODULE="github.com/savrin-sharif/go-rest-template"
 
 if [[ $# -ne 1 ]]; then
   echo "Usage: $0 <new-module-path>" >&2
