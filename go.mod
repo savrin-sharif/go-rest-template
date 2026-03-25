@@ -1,4 +1,4 @@
-module github.com/example/go-rest-template
+module github.com/savrin-sharif/go-rest-template
 
 go 1.21
 

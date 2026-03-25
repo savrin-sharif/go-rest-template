@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/example/go-rest-template/internal/config"
+	"github.com/savrin-sharif/go-rest-template/internal/config"
 )
 
 // Server wraps the HTTP server and lifecycle hooks.

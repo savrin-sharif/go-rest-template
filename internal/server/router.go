@@ -8,9 +8,9 @@ import (
 	chmiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	"github.com/example/go-rest-template/internal/config"
-	"github.com/example/go-rest-template/internal/handler"
-	appmw "github.com/example/go-rest-template/internal/middleware"
+	"github.com/savrin-sharif/go-rest-template/internal/config"
+	"github.com/savrin-sharif/go-rest-template/internal/handler"
+	appmw "github.com/savrin-sharif/go-rest-template/internal/middleware"
 )
 
 func newRouter(cfg config.Config, logger *slog.Logger) http.Handler {

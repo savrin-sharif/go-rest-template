@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/example/go-rest-template/internal/config"
-	"github.com/example/go-rest-template/internal/server"
+	"github.com/savrin-sharif/go-rest-template/internal/config"
+	"github.com/savrin-sharif/go-rest-template/internal/server"
 )
 
 func main() {

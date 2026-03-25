@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/example/go-rest-template/pkg/httputil"
+	"github.com/savrin-sharif/go-rest-template/pkg/httputil"
 )
 
 // HealthHandler exposes service readiness endpoints.
