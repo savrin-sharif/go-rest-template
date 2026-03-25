@@ -2,37 +2,59 @@
 set -euo pipefail
 
 TEMPLATE_MODULE="github.com/savrin-sharif/go-rest-template"
-TEMPLATE_GIT_URL="https://${TEMPLATE_MODULE}.git"
-NEW_MODULE="${1:-${NEW_MODULE:-}}"
-
-if [[ -z "$NEW_MODULE" ]]; then
-  cat >&2 <<'USAGE'
-Usage:
-  ./init-project.sh github.com/yourname/awesome-service
-
-You can also pass the module path via NEW_MODULE env var.
-USAGE
-  exit 1
-fi
 
 START_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORK_DIR="$SCRIPT_DIR"
 
-# If not run from a template checkout, fetch it into a temp dir (similar to the Flutter script pattern).
-if [[ ! -f "$WORK_DIR/go.mod" ]]; then
-  if ! command -v git >/dev/null 2>&1; then
-    echo "git is required to fetch the template (${TEMPLATE_GIT_URL})." >&2
-    exit 1
-  fi
-  echo "Template not found locally; cloning ${TEMPLATE_GIT_URL} ..." >&2
-  WORK_DIR="$(mktemp -d)"
-  git clone --depth 1 "$TEMPLATE_GIT_URL" "$WORK_DIR" >&2
+if [[ ! -f "$SCRIPT_DIR/go.mod" ]]; then
+  cat >&2 <<'ERR'
+Template files not found.
+Clone the template repo first, then run this script from that cloned folder.
+ERR
+  exit 1
 fi
 
+WORK_DIR="$(mktemp -d)"
+cleanup() {
+  rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
+
+# Keep the original template checkout unchanged.
+rsync -a --exclude '.git' "$SCRIPT_DIR"/ "$WORK_DIR"/
 cd "$WORK_DIR"
 
-DEFAULT_NAME="${NEW_MODULE##*/}"
+NEW_MODULE="${1:-${NEW_MODULE:-}}"
+DEFAULT_NAME="my-service"
+if [[ -n "$NEW_MODULE" ]]; then
+  DEFAULT_NAME="${NEW_MODULE##*/}"
+fi
+
+# Collect project metadata (prompt with defaults; env vars override prompts).
+if [[ -z "${PROJECT_NAME:-}" ]]; then
+  read -r -p "Project folder name [${DEFAULT_NAME}]: " PROJECT_NAME_INPUT
+  PROJECT_NAME="${PROJECT_NAME_INPUT:-$DEFAULT_NAME}"
+fi
+PROJECT_NAME="${PROJECT_NAME:-$DEFAULT_NAME}"
+
+if [[ -z "$NEW_MODULE" ]]; then
+  DEFAULT_MODULE="github.com/yourname/${PROJECT_NAME}"
+  read -r -p "Go module path [${DEFAULT_MODULE}]: " NEW_MODULE_INPUT
+  NEW_MODULE="${NEW_MODULE_INPUT:-$DEFAULT_MODULE}"
+fi
+
+if [[ "$NEW_MODULE" != */* ]] || [[ "$NEW_MODULE" == *" "* ]]; then
+  echo "Invalid module path: '${NEW_MODULE}'" >&2
+  echo "Example: github.com/yourname/${PROJECT_NAME}" >&2
+  exit 1
+fi
+
+if [[ "$PROJECT_NAME" == *"/"* ]] || [[ "$PROJECT_NAME" == *" "* ]]; then
+  echo "Invalid project folder name: '${PROJECT_NAME}'" >&2
+  echo "Use a simple folder name like: ${NEW_MODULE##*/}" >&2
+  exit 1
+fi
+
 DEFAULT_DESCRIPTION="Production-ready starter for Go REST APIs following the golang-standards/project-layout conventions."
 DEFAULT_DB_URL="$(awk -F= '/^APP_DATABASE_URL=/{sub(/^APP_DATABASE_URL=/, "", $0); print $0; exit}' .env.example 2>/dev/null || true)"
 DEFAULT_DB_URL="${DEFAULT_DB_URL:-postgres://postgres:postgres@localhost:5432/app_db?sslmode=disable}"
@@ -52,21 +74,12 @@ GO_VERSION_MAJOR_MINOR="$(echo "$GO_VERSION_SHORT" | cut -d. -f1-2)" # 1.22
 
 go mod edit -go "$GO_VERSION_MAJOR_MINOR"
 
-# Collect project metadata (prompt with defaults; env vars override prompts).
-if [[ -z "${PROJECT_NAME:-}" ]]; then
-  read -r -p "Project name [${DEFAULT_NAME}]: " PROJECT_NAME_INPUT
-  PROJECT_NAME="${PROJECT_NAME_INPUT:-$DEFAULT_NAME}"
-fi
-PROJECT_NAME="${PROJECT_NAME:-$DEFAULT_NAME}"
-
 if [[ -z "${PROJECT_DESCRIPTION:-}" ]]; then
   read -r -p "Project description [${DEFAULT_DESCRIPTION}]: " PROJECT_DESCRIPTION_INPUT
   PROJECT_DESCRIPTION="${PROJECT_DESCRIPTION_INPUT:-$DEFAULT_DESCRIPTION}"
 fi
 PROJECT_DESCRIPTION="${PROJECT_DESCRIPTION:-$DEFAULT_DESCRIPTION}"
 
-DEFAULT_BADGES="[![Go Version](https://img.shields.io/badge/go-${GO_VERSION_MAJOR_MINOR}-blue)](https://go.dev) [![CI](https://img.shields.io/badge/ci-ready-lightgrey)](https://github.com/${NEW_MODULE}/actions)"
-PROJECT_BADGES="${PROJECT_BADGES:-$DEFAULT_BADGES}"
 PROJECT_NAME_ESC=${PROJECT_NAME//\//\\/}
 PROJECT_DESCRIPTION_ESC=${PROJECT_DESCRIPTION//\//\\/}
 
@@ -100,6 +113,11 @@ perl -0777 -pi -e "s/^info:\\n  title:.*\\n  version:.*\\n  description:.*$/info
 
 # Copy scaffold into a folder named after the project in the starting directory.
 TARGET_DIR="${START_DIR%/}/${PROJECT_NAME}"
+if [[ -e "$TARGET_DIR" ]]; then
+  echo "Target directory already exists: ${TARGET_DIR}" >&2
+  echo "Choose another project folder name or remove the existing folder first." >&2
+  exit 1
+fi
 mkdir -p "$TARGET_DIR"
 rsync -a --exclude '.git' "$WORK_DIR"/ "$TARGET_DIR"/
 
@@ -117,5 +135,4 @@ Next steps:
   2) Review .env (or .env.example) and adjust APP_DATABASE_URL if needed.
   3) Update configs/config.yaml and api/openapi.yaml to match your service.
   4) Run: go mod tidy && go test ./...
-  5) Initialize git and create your first commit if desired.
 TODO

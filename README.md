@@ -10,7 +10,7 @@ Production-ready starter for Go (1.21+) REST APIs following the [golang-standard
 - Graceful shutdown on `SIGINT`/`SIGTERM`
 - Make targets for build/test/lint/tidy
 - Multi-stage Dockerfile and docker-compose for local runs
-- `init-project.sh` to rename the module, rewrite imports, and re-init git
+- `init-project.sh` to create a new project folder and rewrite module/import paths
 
 ## Layout
 ```
@@ -48,14 +48,26 @@ docker-compose up --build
 database setup from a single env source: `APP_DATABASE_URL` (required at runtime).
 
 ## Re-brand the template
+Clone this template once, then generate projects locally/offline from that clone:
+```bash
+# 1) clone template once
+git clone https://github.com/savrin-sharif/go-rest-template.git
+cd go-rest-template
+
+# 2) run initializer (it prompts for project folder and module path)
+./init-project.sh
+```
+
+Or pass your module directly:
 ```bash
 ./init-project.sh github.com/yourname/awesome-service
 ```
 
-Or:
+Or with env var:
 ```bash
 NEW_MODULE=github.com/yourname/awesome-service ./init-project.sh
 ```
 
-The initializer also offers an optional DB setup prompt and writes your chosen
-`APP_DATABASE_URL` into `.env` and `.env.example` in the generated project.
+The initializer creates a new project folder in your current directory, rewrites
+imports/module path, updates config/OpenAPI names, and writes your chosen
+`APP_DATABASE_URL` into `.env` and `.env.example`.
