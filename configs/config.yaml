@@ -11,6 +11,11 @@ server:
     - http://localhost:3000
     - http://127.0.0.1:3000
 
+database:
+  # APP_DATABASE_URL is required (env-only).
+  maxOpenConns: 25
+  maxIdleConns: 5
+  connMaxLifetime: 5m
+
 log:
   level: info
-

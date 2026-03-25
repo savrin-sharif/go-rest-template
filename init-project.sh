@@ -24,6 +24,8 @@ cd "$WORK_DIR"
 
 DEFAULT_NAME="${NEW_MODULE##*/}"
 DEFAULT_DESCRIPTION="Production-ready starter for Go REST APIs following the golang-standards/project-layout conventions."
+DEFAULT_DB_URL="$(awk -F= '/^APP_DATABASE_URL=/{sub(/^APP_DATABASE_URL=/, "", $0); print $0; exit}' .env.example 2>/dev/null || true)"
+DEFAULT_DB_URL="${DEFAULT_DB_URL:-postgres://postgres:postgres@localhost:5432/app_db?sslmode=disable}"
 
 # Update go.mod module path
 if command -v go >/dev/null 2>&1; then
@@ -58,6 +60,24 @@ PROJECT_BADGES="${PROJECT_BADGES:-$DEFAULT_BADGES}"
 PROJECT_NAME_ESC=${PROJECT_NAME//\//\\/}
 PROJECT_DESCRIPTION_ESC=${PROJECT_DESCRIPTION//\//\\/}
 
+# Optional DB setup. If skipped, use the template example URL.
+if [[ -z "${APP_DATABASE_URL:-}" ]]; then
+  read -r -p "Configure database URL now? [y/N]: " CONFIGURE_DB_INPUT
+  CONFIGURE_DB_INPUT="${CONFIGURE_DB_INPUT:-N}"
+  CONFIGURE_DB_INPUT="$(printf '%s' "$CONFIGURE_DB_INPUT" | tr '[:upper:]' '[:lower:]')"
+
+  case "$CONFIGURE_DB_INPUT" in
+    y|yes)
+      read -r -p "APP_DATABASE_URL [${DEFAULT_DB_URL}]: " APP_DATABASE_URL_INPUT
+      APP_DATABASE_URL="${APP_DATABASE_URL_INPUT:-$DEFAULT_DB_URL}"
+      ;;
+    *)
+      APP_DATABASE_URL="$DEFAULT_DB_URL"
+      ;;
+  esac
+fi
+APP_DATABASE_URL="${APP_DATABASE_URL:-$DEFAULT_DB_URL}"
+
 # Rewrite import paths in source files
 find . -path './.git' -prune -o -type f -print0 | \
   xargs -0 perl -pi -e "s|${TEMPLATE_MODULE}|${NEW_MODULE}|g"
@@ -73,6 +93,10 @@ TARGET_DIR="${START_DIR%/}/${PROJECT_NAME}"
 mkdir -p "$TARGET_DIR"
 rsync -a --exclude '.git' "$WORK_DIR"/ "$TARGET_DIR"/
 
+# Write project-local env files with selected DB URL.
+printf 'APP_DATABASE_URL=%s\n' "$APP_DATABASE_URL" > "$TARGET_DIR/.env.example"
+printf 'APP_DATABASE_URL=%s\n' "$APP_DATABASE_URL" > "$TARGET_DIR/.env"
+
 # Remove initializer from the generated project.
 rm -f "$TARGET_DIR/init-project.sh" "$TARGET_DIR/init-go.sh"
 
@@ -80,7 +104,8 @@ echo "Project initialized with module '${NEW_MODULE}' in ${TARGET_DIR}"
 cat <<'TODO'
 Next steps:
   1) cd into the project folder.
-  2) Update configs/config.yaml and api/openapi.yaml to match your service.
-  3) Run: go mod tidy && go test ./...
-  4) Initialize git and create your first commit if desired.
+  2) Review .env (or .env.example) and adjust APP_DATABASE_URL if needed.
+  3) Update configs/config.yaml and api/openapi.yaml to match your service.
+  4) Run: go mod tidy && go test ./...
+  5) Initialize git and create your first commit if desired.
 TODO

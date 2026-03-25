@@ -1,18 +1,22 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 // Config holds the application configuration values.
 type Config struct {
-	AppName string
-	Server  ServerConfig
-	Log     LogConfig
+	AppName  string
+	Server   ServerConfig
+	Database DatabaseConfig
+	Log      LogConfig
 }
 
 // ServerConfig contains HTTP server settings.
@@ -25,6 +29,14 @@ type ServerConfig struct {
 	IdleTimeout     time.Duration
 }
 
+// DatabaseConfig contains database connection settings.
+type DatabaseConfig struct {
+	URL             string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+}
+
 // LogConfig controls structured logging behavior.
 type LogConfig struct {
 	Level string
@@ -33,6 +45,10 @@ type LogConfig struct {
 // Load reads configuration from file (optional) and environment variables.
 // Environment variables override file values. The APP_ prefix is used for env keys.
 func Load(configPath string) (Config, error) {
+	if err := loadDotEnvIfPresent(); err != nil {
+		return Config{}, err
+	}
+
 	setDefaults()
 
 	viper.SetEnvPrefix("APP")
@@ -64,11 +80,36 @@ func Load(configPath string) (Config, error) {
 			WriteTimeout:    viper.GetDuration("server.writeTimeout"),
 			IdleTimeout:     viper.GetDuration("server.idleTimeout"),
 		},
+		Database: DatabaseConfig{
+			// DB DSN is intentionally env-only to enforce a single source of truth.
+			URL:             strings.TrimSpace(os.Getenv("APP_DATABASE_URL")),
+			MaxOpenConns:    viper.GetInt("database.maxOpenConns"),
+			MaxIdleConns:    viper.GetInt("database.maxIdleConns"),
+			ConnMaxLifetime: viper.GetDuration("database.connMaxLifetime"),
+		},
 		Log: LogConfig{Level: viper.GetString("log.level")},
 	}
 
 	normalize(&cfg)
+	if cfg.Database.URL == "" {
+		return Config{}, fmt.Errorf("missing required environment variable APP_DATABASE_URL")
+	}
 	return cfg, nil
+}
+
+func loadDotEnvIfPresent() error {
+	if _, err := os.Stat(".env"); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("failed to check .env: %w", err)
+	}
+
+	if err := gotenv.Load(".env"); err != nil {
+		return fmt.Errorf("failed to load .env: %w", err)
+	}
+
+	return nil
 }
 
 func setDefaults() {
@@ -79,6 +120,9 @@ func setDefaults() {
 	viper.SetDefault("server.writeTimeout", "15s")
 	viper.SetDefault("server.idleTimeout", "60s")
 	viper.SetDefault("server.allowedOrigins", []string{"http://localhost:3000", "http://127.0.0.1:3000"})
+	viper.SetDefault("database.maxOpenConns", 25)
+	viper.SetDefault("database.maxIdleConns", 5)
+	viper.SetDefault("database.connMaxLifetime", "5m")
 	viper.SetDefault("log.level", "info")
 }
 
@@ -100,5 +144,14 @@ func normalize(cfg *Config) {
 	}
 	if len(cfg.Server.AllowedOrigins) == 0 {
 		cfg.Server.AllowedOrigins = []string{"*"}
+	}
+	if cfg.Database.MaxOpenConns <= 0 {
+		cfg.Database.MaxOpenConns = 25
+	}
+	if cfg.Database.MaxIdleConns <= 0 {
+		cfg.Database.MaxIdleConns = 5
+	}
+	if cfg.Database.ConnMaxLifetime <= 0 {
+		cfg.Database.ConnMaxLifetime = 5 * time.Minute
 	}
 }

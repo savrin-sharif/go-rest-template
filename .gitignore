@@ -23,4 +23,4 @@ vendor/
 # Env files
 .env
 .env.*
-
+!.env.example
