@@ -73,4 +73,14 @@ TARGET_DIR="${START_DIR%/}/${PROJECT_NAME}"
 mkdir -p "$TARGET_DIR"
 rsync -a --exclude '.git' "$WORK_DIR"/ "$TARGET_DIR"/
 
+# Remove initializer from the generated project.
+rm -f "$TARGET_DIR/init-project.sh" "$TARGET_DIR/init-go.sh"
+
 echo "Project initialized with module '${NEW_MODULE}' in ${TARGET_DIR}"
+cat <<'TODO'
+Next steps:
+  1) cd into the project folder.
+  2) Update configs/config.yaml and api/openapi.yaml to match your service.
+  3) Run: go mod tidy && go test ./...
+  4) Initialize git and create your first commit if desired.
+TODO
