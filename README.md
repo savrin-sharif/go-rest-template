@@ -52,5 +52,10 @@ database setup from a single env source: `APP_DATABASE_URL` (required at runtime
 ./init-project.sh github.com/yourname/awesome-service
 ```
 
+Or:
+```bash
+NEW_MODULE=github.com/yourname/awesome-service ./init-project.sh
+```
+
 The initializer also offers an optional DB setup prompt and writes your chosen
 `APP_DATABASE_URL` into `.env` and `.env.example` in the generated project.

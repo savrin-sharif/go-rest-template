@@ -3,7 +3,17 @@ set -euo pipefail
 
 TEMPLATE_MODULE="github.com/savrin-sharif/go-rest-template"
 TEMPLATE_GIT_URL="https://${TEMPLATE_MODULE}.git"
-NEW_MODULE="$TEMPLATE_MODULE"
+NEW_MODULE="${1:-${NEW_MODULE:-}}"
+
+if [[ -z "$NEW_MODULE" ]]; then
+  cat >&2 <<'USAGE'
+Usage:
+  ./init-project.sh github.com/yourname/awesome-service
+
+You can also pass the module path via NEW_MODULE env var.
+USAGE
+  exit 1
+fi
 
 START_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
