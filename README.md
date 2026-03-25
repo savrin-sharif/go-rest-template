@@ -48,13 +48,21 @@ docker-compose up --build
 database setup from a single env source: `APP_DATABASE_URL` (required at runtime).
 
 ## Re-brand the template
-Clone this template once, then generate projects locally/offline from that clone:
+Quickest way (run straight from script):
 ```bash
-# 1) clone template once
+# Download initializer and run it.
+curl -fsSL https://raw.githubusercontent.com/savrin-sharif/go-rest-template/main/init-project.sh -o init-project.sh
+chmod +x init-project.sh
+./init-project.sh
+```
+
+The script prompts for project folder/module path and creates your new project
+in the current directory.
+
+Offline/local mode (if you already cloned the template):
+```bash
 git clone https://github.com/savrin-sharif/go-rest-template.git
 cd go-rest-template
-
-# 2) run initializer (it prompts for project folder and module path)
 ./init-project.sh
 ```
 

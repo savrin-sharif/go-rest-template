@@ -2,17 +2,10 @@
 set -euo pipefail
 
 TEMPLATE_MODULE="github.com/savrin-sharif/go-rest-template"
+TEMPLATE_GIT_URL="${TEMPLATE_GIT_URL:-https://${TEMPLATE_MODULE}.git}"
 
 START_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if [[ ! -f "$SCRIPT_DIR/go.mod" ]]; then
-  cat >&2 <<'ERR'
-Template files not found.
-Clone the template repo first, then run this script from that cloned folder.
-ERR
-  exit 1
-fi
 
 WORK_DIR="$(mktemp -d)"
 cleanup() {
@@ -20,8 +13,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Keep the original template checkout unchanged.
-rsync -a --exclude '.git' "$SCRIPT_DIR"/ "$WORK_DIR"/
+# If script is run from the template checkout, use it offline.
+if [[ -f "$SCRIPT_DIR/go.mod" ]] && grep -Eq "^module[[:space:]]+${TEMPLATE_MODULE}$" "$SCRIPT_DIR/go.mod"; then
+  rsync -a --exclude '.git' "$SCRIPT_DIR"/ "$WORK_DIR"/
+else
+  if ! command -v git >/dev/null 2>&1; then
+    echo "git is required to fetch the template (${TEMPLATE_GIT_URL})." >&2
+    exit 1
+  fi
+  echo "Template files not found next to script; cloning ${TEMPLATE_GIT_URL} ..." >&2
+  if ! git clone --depth 1 "$TEMPLATE_GIT_URL" "$WORK_DIR" >&2; then
+    echo "Failed to clone template. Check internet access or run from a local template clone." >&2
+    exit 1
+  fi
+fi
+
 cd "$WORK_DIR"
 
 NEW_MODULE="${1:-${NEW_MODULE:-}}"
