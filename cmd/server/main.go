@@ -19,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := config.NewLogger(cfg.Log.Level)
+	logger := config.NewLogger(cfg.Log.Level, cfg.Log.AddSource)
 
 	srv := server.New(cfg, logger)
 

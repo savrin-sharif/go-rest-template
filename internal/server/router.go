@@ -3,35 +3,31 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
-	"github.com/go-chi/chi/v5"
-	chmiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 
 	"github.com/savrin-sharif/go-rest-template/internal/config"
 	"github.com/savrin-sharif/go-rest-template/internal/handler"
-	appmw "github.com/savrin-sharif/go-rest-template/internal/middleware"
 )
 
 func newRouter(cfg config.Config, logger *slog.Logger) http.Handler {
-	r := chi.NewRouter()
-
-	r.Use(chmiddleware.RequestID)
-	r.Use(chmiddleware.RealIP)
-	r.Use(appmw.Recover(logger))
-	r.Use(appmw.Logger(logger))
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   cfg.Server.AllowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"},
-		ExposedHeaders:   []string{"Link", "X-Request-ID"},
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.Server.AllowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"},
+		ExposeHeaders:    []string{"Link", "X-Request-ID"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge:           5 * time.Minute,
 	}))
 
 	healthHandler := handler.NewHealthHandler(cfg.AppName, logger)
-	r.Get("/", healthHandler.Welcome)
-	r.Get("/health", healthHandler.Health)
+	r.GET("/", gin.WrapF(healthHandler.Welcome))
+	r.GET("/health", gin.WrapF(healthHandler.Health))
 
 	return r
 }

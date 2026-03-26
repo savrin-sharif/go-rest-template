@@ -1,58 +1,31 @@
 package middleware
 
 import (
+	"fmt"
 	"log/slog"
-	"net/http"
 	"time"
 
-	chmiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/gin-gonic/gin"
 )
 
-type responseWriter struct {
-	http.ResponseWriter
-	status int
-	bytes  int
-}
-
-func (rw *responseWriter) WriteHeader(status int) {
-	rw.status = status
-	rw.ResponseWriter.WriteHeader(status)
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	if rw.status == 0 {
-		rw.status = http.StatusOK
-	}
-	n, err := rw.ResponseWriter.Write(b)
-	rw.bytes += n
-	return n, err
-}
-
 // Logger adds structured request logging with request ID correlation.
-func Logger(logger *slog.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			reqID := chmiddleware.GetReqID(r.Context())
+func Logger(logger *slog.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		if q := c.Request.URL.RawQuery; q != "" {
+			path = fmt.Sprintf("%s?%s", path, q)
+		}
 
-			rw := &responseWriter{ResponseWriter: w}
-			next.ServeHTTP(rw, r)
+		c.Next()
 
-			logger.With(
-				slog.String("request_id", reqID),
-				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
-				slog.Int("status", statusFromResponse(rw)),
-				slog.Int("bytes", rw.bytes),
-				slog.Int64("duration_ms", time.Since(start).Milliseconds()),
-			).Info("request completed")
-		})
+		logger.With(
+			slog.String("request_id", c.GetHeader("X-Request-ID")),
+			slog.String("method", c.Request.Method),
+			slog.String("path", path),
+			slog.Int("status", c.Writer.Status()),
+			slog.Int("bytes", c.Writer.Size()),
+			slog.Int64("duration_ms", time.Since(start).Milliseconds()),
+		).Info("request completed")
 	}
-}
-
-func statusFromResponse(rw *responseWriter) int {
-	if rw.status == 0 {
-		return http.StatusOK
-	}
-	return rw.status
 }

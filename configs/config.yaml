@@ -19,3 +19,4 @@ database:
 
 log:
   level: info
+  addSource: false

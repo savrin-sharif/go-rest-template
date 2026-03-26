@@ -39,7 +39,8 @@ type DatabaseConfig struct {
 
 // LogConfig controls structured logging behavior.
 type LogConfig struct {
-	Level string
+	Level     string
+	AddSource bool
 }
 
 // Load reads configuration from file (optional) and environment variables.
@@ -87,7 +88,10 @@ func Load(configPath string) (Config, error) {
 			MaxIdleConns:    viper.GetInt("database.maxIdleConns"),
 			ConnMaxLifetime: viper.GetDuration("database.connMaxLifetime"),
 		},
-		Log: LogConfig{Level: viper.GetString("log.level")},
+		Log: LogConfig{
+			Level:     viper.GetString("log.level"),
+			AddSource: viper.GetBool("log.addSource"),
+		},
 	}
 
 	normalize(&cfg)
@@ -124,6 +128,7 @@ func setDefaults() {
 	viper.SetDefault("database.maxIdleConns", 5)
 	viper.SetDefault("database.connMaxLifetime", "5m")
 	viper.SetDefault("log.level", "info")
+	viper.SetDefault("log.addSource", false)
 }
 
 func normalize(cfg *Config) {

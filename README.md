@@ -1,9 +1,10 @@
 # Go REST API Template
 
-Production-ready starter for Go (1.21+) REST APIs following the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) conventions.
+Production-ready starter for Go (1.25+) REST APIs following the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) conventions.
 
 ## Features
-- Chi router with request ID, recovery, CORS, and slog-based request logging
+- Gin router with colorized request logs, recovery, and CORS support
+- Compact slog output by default (`APP_LOG_ADD_SOURCE=false`), with source toggle for debugging
 - Health and welcome endpoints out of the box
 - Environment-first configuration via Viper with sane defaults
 - Built-in database config with single-source DSN (`APP_DATABASE_URL`)
